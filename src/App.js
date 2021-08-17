@@ -5,11 +5,14 @@ import store from './Utils/Store'
 import storeApi from './Utils/storeApi'
 import { makeStyles } from '@material-ui/core/styles'
 import InputContainer from './Components/Input/inputContainer';
+import { DragDropContext } from 'react-beautiful-dnd'
 
 const useStyle = makeStyles((theme) => ({
 root:{
  display: 'flex',
- minHeight: '100vh'
+ minHeight: '100vh',
+ width:'100%',
+ overflowY:'auto'
 }
 }))
 
@@ -70,14 +73,44 @@ export default function App() {
     setData(newState)
   }
 
+  const onDragEnd = (result) => {
+    const {destination, source, draggableId} = result
+
+    if (!destination){
+      return;
+    }
+
+    const sourceList = data.lists[source.dropabbleId]
+    const destinationList = data.lists[destination.dropabbleId]
+    const draggingCard = sourceList.cards.filter(
+      (card) => card.id === draggableId)[0];
+
+    if (source.dropabbleId === destination.dropabbleId){
+      sourceList.cards.splice(source.index, 1)
+      destinationList.cards.splice(destination.index, 0, draggingCard)
+    }
+
+    const newState = {
+      ...data,
+      lists:{
+        ...data.lists,
+        [sourceList.id]:destinationList
+      }
+    }
+
+    setData(newState)
+  }
+
   return (
     <storeApi.Provider value={{addMoreCards, addMoreLists, updateListTitle}}>
-    <div className={classes.root}> 
-    {data.listIds.map((listId) => {
-      const list = data.lists[listId]
-      return <List list={list} key={listId}/>
-})}
-    <InputContainer type='list' />
-    </div>
+        <DragDropContext onDragEnd={onDragEnd}>
+            <div className={classes.root}> 
+            {data.listIds.map((listId, index) => {
+              const list = data.lists[listId]
+              return <List list={list} key={listId} index={index}/>
+            })}
+            <InputContainer type='list' />
+            </div>
+      </DragDropContext>
     </storeApi.Provider>
   )}
